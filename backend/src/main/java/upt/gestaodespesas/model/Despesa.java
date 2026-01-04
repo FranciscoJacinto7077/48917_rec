@@ -13,10 +13,18 @@ import javax.persistence.Table;
 @Table(name = "despesas")
 public class Despesa {
 	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private	 Long id;
+	
+	@Column(nullable = false)
 	private String descricao;
+	
+	@Column(nullable = false)
 	private Double valor;
-	private String data;
+	
+	@Column(nullable = false)
+	private LocalDate data;
 	
 	public Long getId() {
 		return id;
@@ -42,7 +50,12 @@ public class Despesa {
 		this.valor = valor;
 	}
 	
-	public String getData() {
+	public LocalDate getData() {
 		return data;
+		
+	}
+	
+	public void setData(LocalDate data) {
+		this.data = data;
 	}
 }
