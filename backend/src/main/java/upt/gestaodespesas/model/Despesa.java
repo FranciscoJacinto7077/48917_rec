@@ -8,6 +8,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 
 @Entity
 @Table(name = "despesas")
@@ -17,12 +20,16 @@ public class Despesa {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private	 Long id;
 	
+	@NotBlank
 	@Column(nullable = false)
 	private String descricao;
 	
+	@NotNull
+	@Positive
 	@Column(nullable = false)
 	private Double valor;
 	
+	@NotNull
 	@Column(nullable = false)
 	private LocalDate data;
 	
