@@ -44,4 +44,29 @@ public class DespesaController {
 	    return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
 	
 	}
+	
+	// Atualizar despesa existente
+	@PutMapping("/{id}")
+	public ResponseEntity<Despesa> atualizarDespesa(@PathVariable Long id, @Valid @RequestBody Despesa dados) {
+		return repo.findById(id)
+				.map(existingDespesa -> {
+					existingDespesa.setDescricao(dados.getDescricao());
+					existingDespesa.setValor(dados.getValor());
+					existingDespesa.setData(dados.getData());
+					Despesa atualizada = repo.save(existingDespesa);
+					return ResponseEntity.ok(atualizada);
+				})
+				.orElse(ResponseEntity.notFound().build());
+	}
+	
+	// Deletar despesa
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> apagarDespesa(@PathVariable Long id) {
+	    if (!repo.existsById(id)) {
+	        return ResponseEntity.notFound().build();
+	    }
+	    repo.deleteById(id);
+	    return ResponseEntity.noContent().build();
+	}
+
 }
