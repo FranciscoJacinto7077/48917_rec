@@ -2,6 +2,7 @@ package upt.gestaodespesas.controller;
 
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import upt.gestaodespesas.model.Despesa;
@@ -22,6 +23,13 @@ public class DespesaController {
 	public List<Despesa> listarDespesas() {
 		return repo.findAll();
 		
+	}
+	
+	@GetMapping("/{id}")
+	public ResponseEntity<Despesa> obterDespesaPorId(@PathVariable Long id) {
+		return repo.findById(id)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
 	}
 	
 	@PostMapping
