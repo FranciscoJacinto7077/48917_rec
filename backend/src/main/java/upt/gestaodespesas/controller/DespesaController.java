@@ -1,6 +1,9 @@
 package upt.gestaodespesas.controller;
 
 import java.util.List;
+
+import javax.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +28,7 @@ public class DespesaController {
 		
 	}
 	
+	// Obter despesa por ID
 	@GetMapping("/{id}")
 	public ResponseEntity<Despesa> obterDespesaPorId(@PathVariable Long id) {
 		return repo.findById(id)
@@ -32,10 +36,12 @@ public class DespesaController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 	
+	// Criar nova despesa
 	@PostMapping
-	@ResponseStatus(HttpStatus.CREATED)
-	public Despesa criarDespesa(@RequestBody Despesa despesa) {
-		despesa.setId(null); // Garantir que o ID seja nulo para criação
-		return repo.save(despesa);
+	public ResponseEntity<Despesa> criarDespesa(@Valid @RequestBody Despesa despesa) {
+	    despesa.setId(null);
+	    Despesa guardada = repo.save(despesa);
+	    return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
+	
 	}
 }
