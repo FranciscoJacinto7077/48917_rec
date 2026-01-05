@@ -9,14 +9,15 @@ import upt.gestaodespesas.repository.DespesaRepository;
 
 @RestController
 @RequestMapping("/api/despesas")
-public class DespensaController {
+public class DespesaController {
 	
 	private final DespesaRepository repo;
 	
-	public DespensaController(DespesaRepository repo) {
+	public DespesaController(DespesaRepository repo) {
 		this.repo = repo;
 	}
-	
+
+	// Listar todas as despesas
 	@GetMapping
 	public List<Despesa> listarDespesas() {
 		return repo.findAll();
