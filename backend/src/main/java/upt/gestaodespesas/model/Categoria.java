@@ -15,6 +15,10 @@ public class Categoria {
 	@Column(nullable = false, unique = true)
 	private String nome;
 	
+	@ManyToOne
+	@JoinColumn(name = "categoria_id", nullable = false)
+	private Categoria categoria;
+	
 	public Categoria() {}
 	
 	public Long getId() {
@@ -34,6 +38,14 @@ public class Categoria {
 	
 	public void setNome(String nome) {
 		this.nome = nome;
+	}
+	
+	public Categoria getCategoria() {
+		return categoria;
+	}
+	
+	public void setCategoria(Categoria categoria) {
+		this.categoria = categoria;
 	}
 	
 }
