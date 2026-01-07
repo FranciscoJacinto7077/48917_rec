@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -15,6 +17,11 @@ import javax.validation.constraints.Positive;
 @Entity
 @Table(name = "despesas")
 public class Despesa {
+	
+	@NotNull(message = "O método de pagamento é obrigatório")
+	@Enumerated(EnumType.STRING)
+	@Column(name = "metodo_pagamento", nullable = false)
+	private MetodoPagamento metodoPagamento;
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +39,14 @@ public class Despesa {
 	@NotNull
 	@Column(nullable = false)
 	private LocalDate data;
+	
+	public MetodoPagamento getMetodoPagamento() {
+		return metodoPagamento;
+	}
+	
+	public void setMetodoPagamento(MetodoPagamento metodoPagamento) {
+		this.metodoPagamento = metodoPagamento;
+	}
 	
 	public Long getId() {
 		return id;
