@@ -13,6 +13,8 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
+import javax.persistence.ManyToOne;
+import javax.persistence.JoinColumn;
 
 @Entity
 @Table(name = "despesas")
@@ -22,6 +24,10 @@ public class Despesa {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "metodo_pagamento", nullable = false)
 	private MetodoPagamento metodoPagamento;
+	
+	@ManyToOne
+	@JoinColumn(name = "categoria_id", nullable = false)
+	private Categoria categoria;
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +45,14 @@ public class Despesa {
 	@NotNull
 	@Column(nullable = false)
 	private LocalDate data;
+	
+	public Categoria getCategoria() {
+		return categoria;
+	}
+	
+	public void setCategoria(Categoria categoria) {
+		this.categoria = categoria;
+	}
 	
 	public MetodoPagamento getMetodoPagamento() {
 		return metodoPagamento;

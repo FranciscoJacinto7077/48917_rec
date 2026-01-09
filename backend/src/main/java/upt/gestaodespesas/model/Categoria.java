@@ -4,7 +4,10 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "categorias")
+@Table(name = "categorias", uniqueConstraints = {
+		@UniqueConstraint(columnNames = "nome", name = "uk_categoria_nome")
+})
+
 public class Categoria {
 	
 	@Id
@@ -14,10 +17,6 @@ public class Categoria {
 	@NotBlank
 	@Column(nullable = false, unique = true)
 	private String nome;
-	
-	@ManyToOne
-	@JoinColumn(name = "categoria_id", nullable = false)
-	private Categoria categoria;
 	
 	public Categoria() {}
 	
@@ -38,14 +37,6 @@ public class Categoria {
 	
 	public void setNome(String nome) {
 		this.nome = nome;
-	}
-	
-	public Categoria getCategoria() {
-		return categoria;
-	}
-	
-	public void setCategoria(Categoria categoria) {
-		this.categoria = categoria;
 	}
 	
 }
