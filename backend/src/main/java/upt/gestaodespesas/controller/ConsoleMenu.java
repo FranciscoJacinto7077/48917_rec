@@ -98,11 +98,27 @@ public class ConsoleMenu {
 						System.err.println("Entrada numerica invalida. Tente novamente.");
 					}
 					break;
+				case 4:
+					try {
+						List<String> despesas = db.listarDespesas();
+						System.out.println("Despesas:");
+
+						if (despesas.isEmpty()) {
+							System.out.println("(vazio)");
+						} else {
+							despesas.forEach(System.out::println);
+						}
+
+					} catch (SQLException e) {
+						System.err.println("Erro ao listar despesas: " + e.getMessage());
+					}
+					break;
 					
 				case 0:
 					System.out.println("Saindo...");
 					sc.close();
 					return;
+				
 				default:
 					System.out.println("Opcao invalida. Tente novamente.");
 			}
