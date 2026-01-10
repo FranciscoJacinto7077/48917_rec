@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>pt.gestaodespesas</groupId>
+    <groupId>upt.gestaodespesas</groupId>
     <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>GestaoDespesasBackend</name>

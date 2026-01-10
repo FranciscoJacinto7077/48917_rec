@@ -8,9 +8,10 @@ public class ConsoleMenu {
 	
 	public static void main(String[] args) {
 		
-		String url = "jdbc:postgresql://localhost:5432/gestaodespesas";
-		String user = "root";
-		String pass = "pass";
+		String url = "jdbc:mysql://localhost:3306/despesasdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+		String user = "despesas_user";
+		String pass = "Despesas123!";
+
 		
 		DBService db = new DBService(url, user, pass);
 		Scanner sc = new Scanner(System.in);
