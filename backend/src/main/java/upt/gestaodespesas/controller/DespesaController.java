@@ -68,5 +68,13 @@ public class DespesaController {
 	    repo.deleteById(id);
 	    return ResponseEntity.noContent().build();
 	}
+	
+	// Listar despesas por categoria
+	public List<Despesa> listarDespesas(@RequestParam(required = false) Long categoriaId) {
+	    if (categoriaId == null) {
+	        return repo.findAll();
+	    }
+	    return repo.findByCategoriaId(categoriaId);
+	}
 
 }
