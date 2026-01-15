@@ -53,6 +53,8 @@ public class DespesaController {
 					existingDespesa.setDescricao(dados.getDescricao());
 					existingDespesa.setValor(dados.getValor());
 					existingDespesa.setData(dados.getData());
+					existingDespesa.setCategoria(dados.getCategoria());
+					existingDespesa.setMetodoPagamento(dados.getMetodoPagamento());
 					Despesa atualizada = repo.save(existingDespesa);
 					return ResponseEntity.ok(atualizada);
 				})
