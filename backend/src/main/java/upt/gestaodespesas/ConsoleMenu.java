@@ -7,11 +7,11 @@ import java.util.Scanner;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import upt.gestaodespesas.model.Categoria;
-import upt.gestaodespesas.model.Despesa;
+import upt.gestaodespesas.entity.Categoria;
+import upt.gestaodespesas.entity.Despesa;
+import upt.gestaodespesas.entity.MetodoPagamento;
 import upt.gestaodespesas.repository.CategoriaRepository;
 import upt.gestaodespesas.repository.DespesaRepository;
-import upt.gestaodespesas.model.MetodoPagamento;
 
 @Component
 public class ConsoleMenu implements CommandLineRunner {

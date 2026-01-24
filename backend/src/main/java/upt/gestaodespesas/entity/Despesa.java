@@ -1,4 +1,4 @@
-package upt.gestaodespesas.model;
+package upt.gestaodespesas.entity;
 
 import java.time.LocalDate;
 

@@ -1,4 +1,4 @@
-package upt.gestaodespesas.model;
+package upt.gestaodespesas.entity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
