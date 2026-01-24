@@ -9,44 +9,32 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import upt.gestaodespesas.entity.Categoria;
-import upt.gestaodespesas.repository.CategoriaRepository;
-import upt.gestaodespesas.repository.DespesaRepository;
+import upt.gestaodespesas.service.CategoriaService;
 
 @RestController
 @RequestMapping("/api/categorias")
 public class CategoriaController {
 
-    private final CategoriaRepository repo;
-    private final DespesaRepository despesaRepo;
+    private final CategoriaService service;
 
-    public CategoriaController(CategoriaRepository repo, DespesaRepository despesaRepo) {
-        this.repo = repo;
-        this.despesaRepo = despesaRepo;
+    public CategoriaController(CategoriaService service) {
+        this.service = service;
     }
 
     @GetMapping
     public List<Categoria> listarCategorias() {
-        return repo.findAll();
+        return service.listarCategorias();
     }
 
     @PostMapping
     public ResponseEntity<Categoria> criarCategoria(@Valid @RequestBody Categoria c) {
-        c.setId(null);
-        Categoria guardada = repo.save(c);
+        Categoria guardada = service.criarCategoria(c);
         return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deletarCategoria(@PathVariable Long id) {
-        if (!repo.existsById(id)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Categoria não encontrada");
-        }
-        if (despesaRepo.existsByCategoriaId(id)) {
-        	return ResponseEntity.status(HttpStatus.CONFLICT).body("Não é possível apagar categorias que estão a ser utilizadas em despesas.");	
-        }
-        repo.deleteById(id);
+    public ResponseEntity<Void> apagarCategoria(@PathVariable Long id) {
+        service.apagarCategoria(id);
         return ResponseEntity.noContent().build();
-        
     }
-    
 }

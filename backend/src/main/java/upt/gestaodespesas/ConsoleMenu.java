@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 
 import upt.gestaodespesas.entity.Categoria;
 import upt.gestaodespesas.entity.Despesa;
-import upt.gestaodespesas.entity.MetodoPagamento;
 import upt.gestaodespesas.repository.CategoriaRepository;
 import upt.gestaodespesas.repository.DespesaRepository;
+import upt.gestaodespesas.entity.MetodoPagamento;
 
 @Component
 public class ConsoleMenu implements CommandLineRunner {

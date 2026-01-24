@@ -9,74 +9,49 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import upt.gestaodespesas.entity.Despesa;
-import upt.gestaodespesas.repository.DespesaRepository;
+import upt.gestaodespesas.service.DespesaService;
 
 @RestController
 @RequestMapping("/api/despesas")
 public class DespesaController {
-	
-	private final DespesaRepository repo;
-	
-	public DespesaController(DespesaRepository repo) {
-		this.repo = repo;
-	}
 
-	// Listar todas as despesas
-	@GetMapping
-	public List<Despesa> listarDespesas() {
-		return repo.findAll();
-		
-	}
-	
-	// Obter despesa por ID
-	@GetMapping("/{id}")
-	public ResponseEntity<Despesa> obterDespesaPorId(@PathVariable Long id) {
-		return repo.findById(id)
-				.map(ResponseEntity::ok)
-				.orElse(ResponseEntity.notFound().build());
-	}
-	
-	// Criar nova despesa
-	@PostMapping
-	public ResponseEntity<Despesa> criarDespesa(@Valid @RequestBody Despesa despesa) {
-	    despesa.setId(null);
-	    Despesa guardada = repo.save(despesa);
-	    return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
-	
-	}
-	
-	// Atualizar despesa existente
-	@PutMapping("/{id}")
-	public ResponseEntity<Despesa> atualizarDespesa(@PathVariable Long id, @Valid @RequestBody Despesa dados) {
-		return repo.findById(id)
-				.map(existingDespesa -> {
-					existingDespesa.setDescricao(dados.getDescricao());
-					existingDespesa.setValor(dados.getValor());
-					existingDespesa.setData(dados.getData());
-					existingDespesa.setCategoria(dados.getCategoria());
-					existingDespesa.setMetodoPagamento(dados.getMetodoPagamento());
-					Despesa atualizada = repo.save(existingDespesa);
-					return ResponseEntity.ok(atualizada);
-				})
-				.orElse(ResponseEntity.notFound().build());
-	}
-	
-	// Deletar despesa
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> apagarDespesa(@PathVariable Long id) {
-	    if (!repo.existsById(id)) {
-	        return ResponseEntity.notFound().build();
-	    }
-	    repo.deleteById(id);
-	    return ResponseEntity.noContent().build();
-	}
-	
-	// Listar despesas por categoria
-	public List<Despesa> listarDespesas(@RequestParam(required = false) Long categoriaId) {
-	    if (categoriaId == null) {
-	        return repo.findAll();
-	    }
-	    return repo.findByCategoriaId(categoriaId);
-	}
+    private final DespesaService service;
 
+    public DespesaController(DespesaService service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public List<Despesa> listar(@RequestParam(required = false) Long categoriaId) {
+        return service.listar(categoriaId);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Despesa> obterPorId(@PathVariable Long id) {
+        Despesa d = service.obterPorId(id);
+        if (d == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(d);
+    }
+
+    @PostMapping
+    public ResponseEntity<Despesa> criar(@Valid @RequestBody Despesa despesa) {
+        Despesa guardada = service.criar(despesa);
+        return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Despesa> atualizar(@PathVariable Long id, @Valid @RequestBody Despesa dados) {
+        Despesa d = service.atualizar(id, dados);
+        if (d == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(d);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> apagar(@PathVariable Long id) {
+        boolean ok = service.apagar(id);
+        if (!ok) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.noContent().build();
+    }
 }
