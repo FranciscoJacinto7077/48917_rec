@@ -1,46 +1,63 @@
 package upt.gestaodespesas.controller;
 
-import java.time.LocalDateTime;
-import java.util.*;
-
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import upt.gestaodespesas.dto.ApiErrorResponse;
+import upt.gestaodespesas.exception.BadRequestException;
+import upt.gestaodespesas.exception.ConflictException;
+import upt.gestaodespesas.exception.NotFoundException;
+import upt.gestaodespesas.exception.UnauthorizedException;
+
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException ex) {
-        return build(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), null);
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotFound(NotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage());
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, Object>> conflict(IllegalStateException ex) {
-        return build(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage(), null);
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleConflict(ConflictException ex) {
+        return build(HttpStatus.CONFLICT, "CONFLICT", ex.getMessage());
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(BadRequestException ex) {
+        return build(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> validation(MethodArgumentNotValidException ex) {
-        Map<String, String> fields = new LinkedHashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(err -> fields.put(err.getField(), err.getDefaultMessage()));
-        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Dados inválidos.", fields);
+    public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::formatFieldError)
+                .collect(Collectors.joining(" | "));
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", msg);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> generic(Exception ex) {
-        // não expor detalhes internos
+    public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex) {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
-                "Ocorreu um erro inesperado. Tenta novamente.", null);
+                "Ocorreu um erro inesperado. Tenta novamente.");
     }
 
-    private ResponseEntity<Map<String, Object>> build(HttpStatus status, String code, String message, Object details) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now().toString());
-        body.put("status", status.value());
-        body.put("error", code);
-        body.put("message", message);
-        if (details != null) body.put("details", details);
+    private String formatFieldError(FieldError fe) {
+        return fe.getField() + ": " + fe.getDefaultMessage();
+    }
+
+    private ResponseEntity<ApiErrorResponse> build(HttpStatus status, String code, String message) {
+        ApiErrorResponse body = new ApiErrorResponse(LocalDateTime.now(), status.value(), code, message);
         return ResponseEntity.status(status).body(body);
     }
 }

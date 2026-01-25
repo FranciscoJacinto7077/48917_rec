@@ -20,59 +20,45 @@ public class CategoriaService {
         this.despesaRepo = despesaRepo;
     }
 
-    public List<Categoria> listarCategorias(Long utilizadorId) {
-        return categoriaRepo.findByUtilizadorId(utilizadorId);
+    public List<Categoria> listarCategorias(Utilizador u) {
+        return categoriaRepo.findByUtilizadorIdOrderByNomeAsc(u.getId());
     }
 
-    public Categoria criarCategoria(Long utilizadorId, String nome) {
-        if (nome == null || nome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome da categoria é obrigatório.");
+    public Categoria criarCategoria(Utilizador u, Categoria c) {
+        if (categoriaRepo.existsByUtilizadorIdAndNomeIgnoreCase(u.getId(), c.getNome())) {
+            throw new RuntimeException("Já existe uma categoria com esse nome.");
         }
-
-        String n = nome.trim();
-        if (categoriaRepo.existsByUtilizadorIdAndNomeIgnoreCase(utilizadorId, n)) {
-            throw new IllegalArgumentException("Já existe uma categoria com esse nome para o utilizador.");
-        }
-
-        Categoria c = new Categoria();
         c.setId(null);
-        c.setNome(n);
-
-        Utilizador u = new Utilizador();
-        u.setId(utilizadorId);
         c.setUtilizador(u);
-
         return categoriaRepo.save(c);
     }
 
-    public Categoria editarCategoria(Long utilizadorId, Long categoriaId, String novoNome) {
-        if (novoNome == null || novoNome.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome da categoria é obrigatório.");
+    // RF5: editar categoria (nome único por utilizador)
+    public Categoria atualizarCategoria(Utilizador u, Long categoriaId, Categoria dados) {
+        Categoria existente = categoriaRepo.findByIdAndUtilizadorId(categoriaId, u.getId())
+                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
+
+        String novoNome = (dados.getNome() == null) ? "" : dados.getNome().trim();
+        if (novoNome.isEmpty()) {
+            throw new RuntimeException("O nome da categoria é obrigatório.");
         }
 
-        Categoria c = categoriaRepo.findByIdAndUtilizadorId(categoriaId, utilizadorId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada."));
-
-        String n = novoNome.trim();
-
-        // se mudou, tem de continuar único por utilizador
-        if (!c.getNome().equalsIgnoreCase(n)
-                && categoriaRepo.existsByUtilizadorIdAndNomeIgnoreCase(utilizadorId, n)) {
-            throw new IllegalArgumentException("Já existe uma categoria com esse nome para o utilizador.");
+        if (!existente.getNome().equalsIgnoreCase(novoNome) &&
+            categoriaRepo.existsByUtilizadorIdAndNomeIgnoreCase(u.getId(), novoNome)) {
+            throw new RuntimeException("Já existe uma categoria com esse nome.");
         }
 
-        c.setNome(n);
-        return categoriaRepo.save(c);
+        existente.setNome(novoNome);
+        return categoriaRepo.save(existente);
     }
 
-    public void apagarCategoria(Long utilizadorId, Long categoriaId) {
-        Categoria c = categoriaRepo.findByIdAndUtilizadorId(categoriaId, utilizadorId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada."));
+    public void apagarCategoria(Utilizador u, Long categoriaId) {
+        Categoria cat = categoriaRepo.findByIdAndUtilizadorId(categoriaId, u.getId())
+                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
 
-        if (despesaRepo.existsByCategoriaIdAndUtilizadorId(categoriaId, utilizadorId)) {
-            throw new IllegalStateException("Não é possível apagar categorias que estão a ser utilizadas em despesas.");
+        if (despesaRepo.existsByUtilizadorIdAndCategoriaId(u.getId(), categoriaId)) {
+            throw new RuntimeException("Não é possível apagar categorias com despesas associadas.");
         }
-
-        categoriaRepo.delete(c);
+        categoriaRepo.delete(cat);
     }
 }

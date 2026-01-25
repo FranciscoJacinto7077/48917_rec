@@ -4,21 +4,18 @@ import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.GenericFilter;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
-public class JwtAuthFilter extends GenericFilter {
-
-    private static final long serialVersionUID = 1L;
+public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
@@ -29,27 +26,26 @@ public class JwtAuthFilter extends GenericFilter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
-        HttpServletRequest req = (HttpServletRequest) request;
-        String auth = req.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        if (auth != null && auth.startsWith("Bearer ")) {
-            String token = auth.substring(7);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring("Bearer ".length()).trim();
 
             if (jwtUtil.isValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
                 String email = jwtUtil.getEmail(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                UsernamePasswordAuthenticationToken authentication =
+                UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
-        chain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 }

@@ -1,142 +1,133 @@
 package upt.gestaodespesas.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import upt.gestaodespesas.entity.Categoria;
+import upt.gestaodespesas.entity.Despesa;
+import upt.gestaodespesas.entity.DespesaRecorrente;
+import upt.gestaodespesas.entity.Periodicidade;
+import upt.gestaodespesas.exception.NotFoundException;
+import upt.gestaodespesas.repository.CategoriaRepository;
+import upt.gestaodespesas.repository.DespesaRecorrenteRepository;
+import upt.gestaodespesas.repository.DespesaRepository;
+
 import java.time.LocalDate;
 import java.util.List;
-
-import org.springframework.stereotype.Service;
-
-import upt.gestaodespesas.entity.*;
-import upt.gestaodespesas.repository.*;
 
 @Service
 public class RecorrenciaService {
 
-    private final DespesaRecorrenteRepository recorrenteRepo;
+    private final DespesaRecorrenteRepository recorrenciaRepo;
     private final CategoriaRepository categoriaRepo;
     private final DespesaRepository despesaRepo;
 
-    public RecorrenciaService(DespesaRecorrenteRepository recorrenteRepo,
+    public RecorrenciaService(DespesaRecorrenteRepository recorrenciaRepo,
                               CategoriaRepository categoriaRepo,
                               DespesaRepository despesaRepo) {
-        this.recorrenteRepo = recorrenteRepo;
+        this.recorrenciaRepo = recorrenciaRepo;
         this.categoriaRepo = categoriaRepo;
         this.despesaRepo = despesaRepo;
     }
 
-    public List<DespesaRecorrente> listar(Long userId) {
-        return recorrenteRepo.findByUtilizadorId(userId);
+    public List<DespesaRecorrente> listar(Long utilizadorId) {
+        return recorrenciaRepo.findByUtilizadorId(utilizadorId);
     }
 
-    public DespesaRecorrente criar(Long userId, DespesaRecorrente r) {
-        if (r == null) throw new IllegalArgumentException("Dados inválidos.");
-
-        validarBase(r);
-
-        Categoria cat = categoriaRepo.findByIdAndUtilizadorId(r.getCategoria().getId(), userId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoria inválida ou não pertence ao utilizador."));
-
-        Utilizador u = new Utilizador();
-        u.setId(userId);
-
+    @Transactional
+    public DespesaRecorrente criar(Long utilizadorId, DespesaRecorrente r) {
         r.setId(null);
-        r.setUtilizador(u);
-        r.setCategoria(cat);
+        r.getUtilizador().setId(utilizadorId);
 
-        // se não vier definida, começa hoje
-        if (r.getProximaGeracao() == null) {
-            r.setProximaGeracao(LocalDate.now());
-        }
+        Categoria c = categoriaRepo.findByIdAndUtilizadorId(r.getCategoria().getId(), utilizadorId)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada."));
+        r.setCategoria(c);
 
-        return recorrenteRepo.save(r);
+        return recorrenciaRepo.save(r);
     }
 
-    public DespesaRecorrente atualizar(Long userId, Long id, DespesaRecorrente dados) {
-        if (dados == null) throw new IllegalArgumentException("Dados inválidos.");
+    @Transactional
+    public DespesaRecorrente atualizar(Long id, Long utilizadorId, DespesaRecorrente r) {
+        DespesaRecorrente existente = recorrenciaRepo.findByIdAndUtilizadorId(id, utilizadorId)
+                .orElseThrow(() -> new NotFoundException("Recorrência não encontrada."));
 
-        DespesaRecorrente existente = recorrenteRepo.findByIdAndUtilizadorId(id, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Recorrência não encontrada."));
+        Categoria c = categoriaRepo.findByIdAndUtilizadorId(r.getCategoria().getId(), utilizadorId)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada."));
 
-        validarBase(dados);
+        existente.setDescricao(r.getDescricao());
+        existente.setValor(r.getValor());
+        existente.setMetodoPagamento(r.getMetodoPagamento());
+        existente.setPeriodicidade(r.getPeriodicidade());
+        existente.setProximaGeracao(r.getProximaGeracao());
+        existente.setAtiva(r.isAtiva());
+        existente.setCategoria(c);
 
-        Categoria cat = categoriaRepo.findByIdAndUtilizadorId(dados.getCategoria().getId(), userId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoria inválida ou não pertence ao utilizador."));
-
-        existente.setDescricao(dados.getDescricao().trim());
-        existente.setValor(dados.getValor());
-        existente.setMetodoPagamento(dados.getMetodoPagamento());
-        existente.setPeriodicidade(dados.getPeriodicidade());
-        existente.setAtiva(dados.isAtiva());
-        existente.setCategoria(cat);
-
-        if (dados.getProximaGeracao() != null) {
-            existente.setProximaGeracao(dados.getProximaGeracao());
-        }
-
-        return recorrenteRepo.save(existente);
+        return recorrenciaRepo.save(existente);
     }
 
-    public void apagar(Long userId, Long id) {
-        DespesaRecorrente existente = recorrenteRepo.findByIdAndUtilizadorId(id, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Recorrência não encontrada."));
-        recorrenteRepo.delete(existente);
+    @Transactional
+    public void apagar(Long id, Long utilizadorId) {
+        DespesaRecorrente existente = recorrenciaRepo.findByIdAndUtilizadorId(id, utilizadorId)
+                .orElseThrow(() -> new NotFoundException("Recorrência não encontrada."));
+        recorrenciaRepo.delete(existente);
     }
 
-    // Job: gerar ocorrências (anti-duplicados)
-    public int gerarOcorrenciasAteHoje() {
+    /**
+     * Corre diariamente (scheduler) e:
+     * - gera uma Despesa para cada DespesaRecorrente ativa cuja proximaGeracao == hoje (ou <= hoje)
+     * - avança a proximaGeracao com base na periodicidade
+     */
+    @Transactional
+    public void gerarDespesasRecorrentesHoje() {
         LocalDate hoje = LocalDate.now();
-        List<DespesaRecorrente> devidas = recorrenteRepo.findByAtivaTrueAndProximaGeracaoLessThanEqual(hoje);
 
-        int criadas = 0;
+        // Se quiseres ser mais eficiente, crias query específica.
+        // Para já: simples e correto.
+        List<DespesaRecorrente> todas = recorrenciaRepo.findAll();
 
-        for (DespesaRecorrente r : devidas) {
-            LocalDate data = r.getProximaGeracao();
+        for (DespesaRecorrente r : todas) {
+            if (!r.isAtiva()) continue;
+            if (r.getProximaGeracao() == null) continue;
 
-            boolean jaExiste = despesaRepo.existsByUtilizadorIdAndDataAndDescricaoAndValorAndCategoriaIdAndMetodoPagamento(
-                    r.getUtilizador().getId(),
-                    data,
-                    r.getDescricao(),
-                    r.getValor(),
-                    r.getCategoria().getId(),
-                    r.getMetodoPagamento()
-            );
+            if (!r.getProximaGeracao().isAfter(hoje)) {
 
-            if (!jaExiste) {
-                Despesa d = new Despesa();
-                d.setDescricao(r.getDescricao());
-                d.setValor(r.getValor());
-                d.setData(data);
-                d.setMetodoPagamento(r.getMetodoPagamento());
-                d.setCategoria(r.getCategoria());
-                d.setUtilizador(r.getUtilizador());
-                despesaRepo.save(d);
-                criadas++;
+                // Evitar duplicados no mesmo dia (caso scheduler corra mais que uma vez)
+                boolean jaExiste = despesaRepo.findByOrigemRecorrenteAndData(r, hoje).isPresent();
+                if (!jaExiste) {
+                    Despesa d = new Despesa();
+                    d.setData(hoje);
+                    d.setDescricao(r.getDescricao());
+                    d.setValor(r.getValor());
+                    d.setMetodoPagamento(r.getMetodoPagamento());
+                    d.setCategoria(r.getCategoria());
+                    d.setUtilizador(r.getUtilizador());
+
+                    // se a tua entidade Despesa tiver este campo:
+                    d.setOrigemRecorrente(r);
+
+                    despesaRepo.save(d);
+                }
+
+                // avançar próxima geração
+                r.setProximaGeracao(calcularProximaData(r.getProximaGeracao(), r.getPeriodicidade()));
+                recorrenciaRepo.save(r);
             }
-
-            // avançar próxima geração
-            r.setProximaGeracao(calcularProxima(data, r.getPeriodicidade()));
-            recorrenteRepo.save(r);
         }
-
-        return criadas;
     }
 
-    private LocalDate calcularProxima(LocalDate atual, Periodicidade p) {
-        if (p == Periodicidade.SEMANAL) return atual.plusWeeks(1);
-        return atual.plusMonths(1);
-    }
+    private LocalDate calcularProximaData(LocalDate base, Periodicidade periodicidade) {
+        if (periodicidade == null) return base.plusMonths(1);
 
-    private void validarBase(DespesaRecorrente r) {
-        if (r.getDescricao() == null || r.getDescricao().trim().isEmpty())
-            throw new IllegalArgumentException("Descrição é obrigatória.");
-        if (r.getValor() == null || r.getValor() <= 0)
-            throw new IllegalArgumentException("Valor deve ser superior a 0.");
-        if (r.getMetodoPagamento() == null)
-            throw new IllegalArgumentException("Método de pagamento é obrigatório.");
-        if (r.getPeriodicidade() == null)
-            throw new IllegalArgumentException("Periodicidade é obrigatória.");
-        if (r.getCategoria() == null || r.getCategoria().getId() == null)
-            throw new IllegalArgumentException("Categoria é obrigatória.");
-        if (r.getProximaGeracao() != null && r.getProximaGeracao().isAfter(LocalDate.now().plusYears(10)))
-            throw new IllegalArgumentException("Data de próxima geração inválida.");
+        switch (periodicidade) {
+            case DIARIA:
+                return base.plusDays(1);
+            case SEMANAL:
+                return base.plusWeeks(1);
+            case MENSAL:
+                return base.plusMonths(1);
+            case ANUAL:
+                return base.plusYears(1);
+            default:
+                return base.plusMonths(1);
+        }
     }
 }

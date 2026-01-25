@@ -3,9 +3,15 @@ package upt.gestaodespesas.entity;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
-@Table(name = "categorias",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"utilizador_id", "nome"}, name = "uk_categoria_user_nome"))
+@Table(
+    name = "categorias",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_categoria_utilizador_nome", columnNames = {"utilizador_id", "nome"})
+    }
+)
 public class Categoria {
 
     @Id
@@ -16,6 +22,7 @@ public class Categoria {
     @Column(nullable = false)
     private String nome;
 
+    @JsonIgnore
     @ManyToOne(optional = false)
     @JoinColumn(name = "utilizador_id", nullable = false)
     private Utilizador utilizador;

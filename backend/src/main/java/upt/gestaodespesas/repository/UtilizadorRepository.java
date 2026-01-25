@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import upt.gestaodespesas.entity.Utilizador;
 
 public interface UtilizadorRepository extends JpaRepository<Utilizador, Long> {
-    boolean existsByEmail(String email);
     Optional<Utilizador> findByEmail(String email);
+    boolean existsByEmail(String email);
 }

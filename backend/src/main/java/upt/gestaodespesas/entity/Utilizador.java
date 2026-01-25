@@ -5,9 +5,12 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "utilizadores", uniqueConstraints = {
-    @UniqueConstraint(columnNames = "email", name = "uk_utilizador_email")
-})
+@Table(
+    name = "utilizadores",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_utilizador_email", columnNames = {"email"})
+    }
+)
 public class Utilizador {
 
     @Id
@@ -20,9 +23,10 @@ public class Utilizador {
 
     @NotBlank
     @Email
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
+    @NotBlank
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 

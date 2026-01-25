@@ -1,6 +1,8 @@
 package upt.gestaodespesas.entity;
 
 public enum Periodicidade {
+    DIARIA,
     SEMANAL,
-    MENSAL
+    MENSAL,
+    ANUAL
 }

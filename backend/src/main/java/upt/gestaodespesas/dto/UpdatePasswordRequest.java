@@ -1,18 +1,39 @@
 package upt.gestaodespesas.dto;
 
-import javax.validation.constraints.NotBlank;
-
 public class UpdatePasswordRequest {
 
-    @NotBlank
     private String passwordAtual;
+    private String novaPassword;
 
-    @NotBlank
-    private String passwordNova;
+    public UpdatePasswordRequest() {
+    }
 
-    public String getPasswordAtual() { return passwordAtual; }
-    public void setPasswordAtual(String passwordAtual) { this.passwordAtual = passwordAtual; }
+    public UpdatePasswordRequest(String passwordAtual, String novaPassword) {
+        this.passwordAtual = passwordAtual;
+        this.novaPassword = novaPassword;
+    }
 
-    public String getPasswordNova() { return passwordNova; }
-    public void setPasswordNova(String passwordNova) { this.passwordNova = passwordNova; }
+    public String getPasswordAtual() {
+        return passwordAtual;
+    }
+
+    public void setPasswordAtual(String passwordAtual) {
+        this.passwordAtual = passwordAtual;
+    }
+
+    public String getNovaPassword() {
+        return novaPassword;
+    }
+
+    public void setNovaPassword(String novaPassword) {
+        this.novaPassword = novaPassword;
+    }
+
+    public String getCurrentPassword() {
+        return this.passwordAtual;
+    }
+
+    public String getNewPassword() {
+        return this.novaPassword;
+    }
 }

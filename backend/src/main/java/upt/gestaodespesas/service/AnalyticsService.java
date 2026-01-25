@@ -6,9 +6,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import upt.gestaodespesas.dto.analytics.*;
+import upt.gestaodespesas.dto.analytics.DashboardResponse;
+import upt.gestaodespesas.dto.analytics.TotalMensalResponse;
+import upt.gestaodespesas.dto.analytics.TotalPorCategoriaItem;
 import upt.gestaodespesas.entity.Despesa;
 import upt.gestaodespesas.repository.DespesaRepository;
 
@@ -21,7 +24,7 @@ public class AnalyticsService {
         this.despesaRepo = despesaRepo;
     }
 
-    // US14
+    // US14 / RF14
     public TotalMensalResponse totalMensal(Long userId, int ano, int mes) {
         if (ano < 1900 || ano > 3000) throw new IllegalArgumentException("Ano inválido.");
         if (mes < 1 || mes > 12) throw new IllegalArgumentException("Mês inválido.");
@@ -36,10 +39,8 @@ public class AnalyticsService {
         return new TotalMensalResponse(ano, mes, round2(total));
     }
 
-    // US15 (período opcional)
+    // US15 / RF15 (período opcional)
     public List<TotalPorCategoriaItem> totalPorCategoria(Long userId, LocalDate dataInicio, LocalDate dataFim) {
-        List<Despesa> despesas;
-
         if ((dataInicio == null) != (dataFim == null)) {
             throw new IllegalArgumentException("Indica dataInicio e dataFim (ou nenhuma).");
         }
@@ -47,10 +48,12 @@ public class AnalyticsService {
             throw new IllegalArgumentException("dataInicio não pode ser posterior a dataFim.");
         }
 
+        List<Despesa> despesas;
+
         if (dataInicio == null) {
-            despesas = despesaRepo.findAll((root, query, cb) ->
-                cb.equal(root.get("utilizador").get("id"), userId)
-            );
+            Specification<Despesa> spec = (root, query, cb) ->
+                    cb.equal(root.get("utilizador").get("id"), userId);
+            despesas = despesaRepo.findAll(spec);
         } else {
             despesas = listarPeriodo(userId, dataInicio, dataFim);
         }
@@ -59,7 +62,6 @@ public class AnalyticsService {
                 .collect(Collectors.groupingBy(d -> d.getCategoria().getId(),
                         Collectors.summingDouble(Despesa::getValor)));
 
-        // precisamos também do nome
         Map<Long, String> nomes = despesas.stream()
                 .collect(Collectors.toMap(d -> d.getCategoria().getId(),
                         d -> d.getCategoria().getNome(),
@@ -71,7 +73,7 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    // US16
+    // US16 / RF16
     public DashboardResponse dashboard(Long userId, LocalDate dataInicio, LocalDate dataFim) {
         if (dataInicio == null || dataFim == null) {
             throw new IllegalArgumentException("dataInicio e dataFim são obrigatórias.");
@@ -115,10 +117,11 @@ public class AnalyticsService {
     }
 
     private List<Despesa> listarPeriodo(Long userId, LocalDate inicio, LocalDate fim) {
-        return despesaRepo.findAll((root, query, cb) -> cb.and(
+        Specification<Despesa> spec = (root, query, cb) -> cb.and(
                 cb.equal(root.get("utilizador").get("id"), userId),
                 cb.between(root.get("data"), inicio, fim)
-        ));
+        );
+        return despesaRepo.findAll(spec);
     }
 
     private double round2(double v) {

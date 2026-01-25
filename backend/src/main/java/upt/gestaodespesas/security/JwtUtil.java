@@ -1,16 +1,14 @@
 package upt.gestaodespesas.security;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
 
 @Component
 public class JwtUtil {
@@ -18,9 +16,11 @@ public class JwtUtil {
     private final SecretKey key;
     private final long expirationMs;
 
-    public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.expiration-ms}") long expirationMs) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    public JwtUtil(
+            @Value("${jwt.secret}") String secret,
+            @Value("${jwt.expiration-ms}") long expirationMs
+    ) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
@@ -37,20 +37,22 @@ public class JwtUtil {
     }
 
     public String getEmail(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+        return parseClaims(token).getBody().getSubject();
     }
 
     public boolean isValid(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    private Jws<Claims> parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token);
     }
 }
