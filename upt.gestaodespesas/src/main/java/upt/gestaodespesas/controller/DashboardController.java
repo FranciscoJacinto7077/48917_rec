@@ -7,7 +7,6 @@ import upt.gestaodespesas.model.Utilizador;
 import upt.gestaodespesas.service.ApiService;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 public class DashboardController {
 
@@ -30,58 +29,81 @@ public class DashboardController {
         loadDashboard();
     }
 
+    /** Se precisares de forçar refresh manualmente a partir do MainController */
+    public void refresh() {
+        loadUserName();
+        loadDashboard();
+    }
+
     private void loadUserName() {
         try {
             Utilizador user = api.get("/api/utilizador/me", Utilizador.class);
-            if (user != null && user.getNome() != null) {
+            if (user != null && user.getNome() != null && !user.getNome().isBlank()) {
                 welcomeLabel.setText("Olá, " + user.getNome() + "!");
+                return;
             }
-        } catch (Exception e) {
-            welcomeLabel.setText("Olá!");
+        } catch (Exception ignored) {
+            // cai para o default
         }
+        welcomeLabel.setText("Olá!");
     }
 
     private void loadDashboard() {
+        // Defaults (garante que nunca ficas com dados “antigos” na UI)
+        totalLabel.setText("€0,00");
+        avgLabel.setText("€0,00/dia");
+        biggestExpenseLabel.setText("N/A");
+        topCategoryLabel.setText("N/A");
+
         try {
-            // Load last 30 days
+            // Últimos 30 dias (inclusive): end + (end-29) => 30 dias
             LocalDate end = LocalDate.now();
-            LocalDate start = end.minusDays(30);
-            
-            String url = String.format("/api/analytics/dashboard?dataInicio=%s&dataFim=%s", start, end);
+            LocalDate start = end.minusDays(29);
+
+            String url = String.format(
+                    "/api/analytics/dashboard?dataInicio=%s&dataFim=%s",
+                    start, end
+            );
+
             DashboardResponse data = api.get(url, DashboardResponse.class);
-            
-            totalLabel.setText(String.format("€%.2f", data.getTotalPeriodo()));
-            avgLabel.setText(String.format("€%.2f/dia", data.getMediaDiaria()));
-            
+            if (data == null) return;
+
+            totalLabel.setText(String.format("€%.2f", safeDouble(data.getTotalPeriodo())));
+            avgLabel.setText(String.format("€%.2f/dia", safeDouble(data.getMediaDiaria())));
+
             if (data.getMaiorDespesa() != null) {
-                biggestExpenseLabel.setText(String.format("%s - €%.2f", 
-                    data.getMaiorDespesa().getDescricao(), 
-                    data.getMaiorDespesa().getValor()));
+                String desc = data.getMaiorDespesa().getDescricao();
+                Double val = data.getMaiorDespesa().getValor();
+                if (desc != null && val != null) {
+                    biggestExpenseLabel.setText(String.format("%s - €%.2f", desc, val));
+                }
             }
-            
+
             if (data.getTopCategoria() != null) {
-                topCategoryLabel.setText(String.format("%s - €%.2f", 
-                    data.getTopCategoria().getCategoriaNome(), 
-                    data.getTopCategoria().getTotal()));
+                String nome = data.getTopCategoria().getCategoriaNome();
+                Double total = data.getTopCategoria().getTotal();
+                if (nome != null && total != null) {
+                    topCategoryLabel.setText(String.format("%s - €%.2f", nome, total));
+                }
             }
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             totalLabel.setText("Erro ao carregar");
         }
     }
 
+    private double safeDouble(Double v) {
+        return (v == null) ? 0.0 : v;
+    }
+
     @FXML
     public void onNewExpense() {
-        if (mainController != null) {
-            mainController.showExpenses();
-        }
+        if (mainController != null) mainController.showExpenses();
     }
 
     @FXML
     public void onViewAll() {
-        if (mainController != null) {
-            mainController.showExpenses();
-        }
+        if (mainController != null) mainController.showExpenses();
     }
 }
