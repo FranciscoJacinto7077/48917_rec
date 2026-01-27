@@ -55,10 +55,13 @@ public class ExpensesController {
 
         paymentBox.setItems(FXCollections.observableArrayList(MetodoPagamento.values()));
 
+        // bloquear datas futuras na criação
+        blockFutureDates(datePicker);
+
         loadCategories();
         loadExpenses();
 
-        // Extra UX: duplo clique para editar
+        // duplo clique para editar
         expensesTable.setRowFactory(tv -> {
             TableRow<Despesa> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -67,6 +70,20 @@ public class ExpensesController {
                 }
             });
             return row;
+        });
+    }
+
+    private void blockFutureDates(DatePicker picker) {
+        picker.setDayCellFactory(dp -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item == null || empty) return;
+                if (item.isAfter(LocalDate.now())) {
+                    setDisable(true);
+                    setStyle("-fx-opacity: 0.4;");
+                }
+            }
         });
     }
 
@@ -97,21 +114,25 @@ public class ExpensesController {
                 query.append("categoriaId=").append(filterCategoryBox.getValue().getId()).append("&");
             }
 
+            // validações datas (frontend) — apenas se ambas existirem
+            if (filterStartDate.getValue() != null && filterEndDate.getValue() != null
+                    && filterStartDate.getValue().isAfter(filterEndDate.getValue())) {
+                showAlert(Alert.AlertType.WARNING, "Aviso", "dataInicio não pode ser posterior a dataFim.");
+                return;
+            }
+
             Double min = parseDoubleOrNull(filterMinValue.getText());
             Double max = parseDoubleOrNull(filterMaxValue.getText());
 
-            if ((min == null) != (max == null)) {
-                showAlert(Alert.AlertType.WARNING, "Aviso", "Indica valor mínimo e máximo (ou nenhum)." );
+            // validação valores (frontend) — só se ambos existirem
+            if (min != null && max != null && min > max) {
+                showAlert(Alert.AlertType.WARNING, "Aviso", "valorMin não pode ser maior que valorMax.");
                 return;
             }
-            if (min != null && max != null) {
-                if (min > max) {
-                    showAlert(Alert.AlertType.WARNING, "Aviso", "valorMin não pode ser maior que valorMax." );
-                    return;
-                }
-                query.append("valorMin=").append(min).append("&");
-                query.append("valorMax=").append(max).append("&");
-            }
+
+            // permite min OU max OU ambos
+            if (min != null) query.append("valorMin=").append(min).append("&");
+            if (max != null) query.append("valorMax=").append(max).append("&");
 
             List<Despesa> list = api.getList(query.toString(), new TypeReference<List<Despesa>>(){});
             expensesList.setAll(list);
@@ -126,6 +147,10 @@ public class ExpensesController {
         try {
             if (datePicker.getValue() == null) {
                 showAlert(Alert.AlertType.WARNING, "Aviso", "A data é obrigatória.");
+                return;
+            }
+            if (datePicker.getValue().isAfter(LocalDate.now())) {
+                showAlert(Alert.AlertType.WARNING, "Aviso", "A data não pode ser futura.");
                 return;
             }
             if (descField.getText() == null || descField.getText().trim().isEmpty()) {
@@ -143,7 +168,7 @@ public class ExpensesController {
 
             Double valor = parseDoubleOrNull(valueField.getText());
             if (valor == null || valor <= 0) {
-                showAlert(Alert.AlertType.WARNING, "Aviso", "Valor inválido (tem de ser > 0)." );
+                showAlert(Alert.AlertType.WARNING, "Aviso", "Valor inválido (tem de ser > 0).");
                 return;
             }
 
@@ -179,6 +204,8 @@ public class ExpensesController {
         dialog.getDialogPane().getButtonTypes().addAll(btnSave, ButtonType.CANCEL);
 
         DatePicker dp = new DatePicker(selected.getData());
+        blockFutureDates(dp);
+
         TextField tfDesc = new TextField(selected.getDescricao());
         TextField tfVal = new TextField(String.valueOf(selected.getValor()));
 
@@ -208,9 +235,15 @@ public class ExpensesController {
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == btnSave) {
                 Double v = parseDoubleOrNull(tfVal.getText());
-                if (dp.getValue() == null || tfDesc.getText().trim().isEmpty() || v == null || v <= 0
+
+                if (dp.getValue() == null || dp.getValue().isAfter(LocalDate.now())) {
+                    showAlert(Alert.AlertType.WARNING, "Aviso", "A data é obrigatória e não pode ser futura.");
+                    return null;
+                }
+
+                if (tfDesc.getText().trim().isEmpty() || v == null || v <= 0
                         || cbCat.getValue() == null || cbPay.getValue() == null) {
-                    showAlert(Alert.AlertType.WARNING, "Aviso", "Preenche todos os campos corretamente." );
+                    showAlert(Alert.AlertType.WARNING, "Aviso", "Preenche todos os campos corretamente.");
                     return null;
                 }
 
@@ -286,7 +319,6 @@ public class ExpensesController {
     private String normalizeApiErrorMessage(Exception e, String fallback) {
         String msg = e.getMessage();
         if (msg == null || msg.isBlank()) return fallback;
-        // mensagem vem tipicamente como "HTTP xxx - ..."
         int idx = msg.indexOf(" - ");
         return (idx >= 0) ? msg.substring(idx + 3) : msg;
     }

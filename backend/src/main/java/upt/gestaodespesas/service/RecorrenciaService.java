@@ -2,14 +2,18 @@ package upt.gestaodespesas.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import upt.gestaodespesas.dto.RecorrenciaRequest;
 import upt.gestaodespesas.entity.Categoria;
 import upt.gestaodespesas.entity.Despesa;
 import upt.gestaodespesas.entity.DespesaRecorrente;
 import upt.gestaodespesas.entity.Periodicidade;
+import upt.gestaodespesas.entity.Utilizador;
+import upt.gestaodespesas.exception.BadRequestException;
 import upt.gestaodespesas.exception.NotFoundException;
 import upt.gestaodespesas.repository.CategoriaRepository;
 import upt.gestaodespesas.repository.DespesaRecorrenteRepository;
 import upt.gestaodespesas.repository.DespesaRepository;
+import upt.gestaodespesas.repository.UtilizadorRepository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,13 +24,16 @@ public class RecorrenciaService {
     private final DespesaRecorrenteRepository recorrenciaRepo;
     private final CategoriaRepository categoriaRepo;
     private final DespesaRepository despesaRepo;
+    private final UtilizadorRepository utilizadorRepo;
 
     public RecorrenciaService(DespesaRecorrenteRepository recorrenciaRepo,
                               CategoriaRepository categoriaRepo,
-                              DespesaRepository despesaRepo) {
+                              DespesaRepository despesaRepo,
+                              UtilizadorRepository utilizadorRepo) {
         this.recorrenciaRepo = recorrenciaRepo;
         this.categoriaRepo = categoriaRepo;
         this.despesaRepo = despesaRepo;
+        this.utilizadorRepo = utilizadorRepo;
     }
 
     public List<DespesaRecorrente> listar(Long utilizadorId) {
@@ -34,31 +41,50 @@ public class RecorrenciaService {
     }
 
     @Transactional
-    public DespesaRecorrente criar(Long utilizadorId, DespesaRecorrente r) {
-        r.setId(null);
-        r.getUtilizador().setId(utilizadorId);
+    public DespesaRecorrente criar(Long utilizadorId, RecorrenciaRequest req) {
 
-        Categoria c = categoriaRepo.findByIdAndUtilizadorId(r.getCategoria().getId(), utilizadorId)
+        if (req.getProximaGeracao() != null && req.getProximaGeracao().isBefore(LocalDate.now())) {
+            throw new BadRequestException("A proximaGeracao não pode ser no passado.");
+        }
+
+        Categoria c = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), utilizadorId)
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada."));
+
+        Utilizador uRef = utilizadorRepo.getReferenceById(utilizadorId);
+
+        DespesaRecorrente r = new DespesaRecorrente();
+        r.setId(null);
+        r.setUtilizador(uRef);
         r.setCategoria(c);
+        r.setDescricao(req.getDescricao() == null ? null : req.getDescricao().trim());
+        r.setValor(req.getValor());
+        r.setMetodoPagamento(req.getMetodoPagamento());
+        r.setPeriodicidade(req.getPeriodicidade());
+        r.setProximaGeracao(req.getProximaGeracao());
+        r.setAtiva(req.isAtiva());
 
         return recorrenciaRepo.save(r);
     }
 
     @Transactional
-    public DespesaRecorrente atualizar(Long id, Long utilizadorId, DespesaRecorrente r) {
+    public DespesaRecorrente atualizar(Long id, Long utilizadorId, RecorrenciaRequest req) {
+
         DespesaRecorrente existente = recorrenciaRepo.findByIdAndUtilizadorId(id, utilizadorId)
                 .orElseThrow(() -> new NotFoundException("Recorrência não encontrada."));
 
-        Categoria c = categoriaRepo.findByIdAndUtilizadorId(r.getCategoria().getId(), utilizadorId)
+        if (req.getProximaGeracao() != null && req.getProximaGeracao().isBefore(LocalDate.now())) {
+            throw new BadRequestException("A proximaGeracao não pode ser no passado.");
+        }
+
+        Categoria c = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), utilizadorId)
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada."));
 
-        existente.setDescricao(r.getDescricao());
-        existente.setValor(r.getValor());
-        existente.setMetodoPagamento(r.getMetodoPagamento());
-        existente.setPeriodicidade(r.getPeriodicidade());
-        existente.setProximaGeracao(r.getProximaGeracao());
-        existente.setAtiva(r.isAtiva());
+        existente.setDescricao(req.getDescricao() == null ? null : req.getDescricao().trim());
+        existente.setValor(req.getValor());
+        existente.setMetodoPagamento(req.getMetodoPagamento());
+        existente.setPeriodicidade(req.getPeriodicidade());
+        existente.setProximaGeracao(req.getProximaGeracao());
+        existente.setAtiva(req.isAtiva());
         existente.setCategoria(c);
 
         return recorrenciaRepo.save(existente);
@@ -71,17 +97,9 @@ public class RecorrenciaService {
         recorrenciaRepo.delete(existente);
     }
 
-    /**
-     * Corre diariamente (scheduler) e:
-     * - gera uma Despesa para cada DespesaRecorrente ativa cuja proximaGeracao == hoje (ou <= hoje)
-     * - avança a proximaGeracao com base na periodicidade
-     */
     @Transactional
     public void gerarDespesasRecorrentesHoje() {
         LocalDate hoje = LocalDate.now();
-
-        // Se quiseres ser mais eficiente, crias query específica.
-        // Para já: simples e correto.
         List<DespesaRecorrente> todas = recorrenciaRepo.findAll();
 
         for (DespesaRecorrente r : todas) {
@@ -90,7 +108,6 @@ public class RecorrenciaService {
 
             if (!r.getProximaGeracao().isAfter(hoje)) {
 
-                // Evitar duplicados no mesmo dia (caso scheduler corra mais que uma vez)
                 boolean jaExiste = despesaRepo.findByOrigemRecorrenteAndData(r, hoje).isPresent();
                 if (!jaExiste) {
                     Despesa d = new Despesa();
@@ -100,14 +117,11 @@ public class RecorrenciaService {
                     d.setMetodoPagamento(r.getMetodoPagamento());
                     d.setCategoria(r.getCategoria());
                     d.setUtilizador(r.getUtilizador());
-
-                    // se a tua entidade Despesa tiver este campo:
                     d.setOrigemRecorrente(r);
 
                     despesaRepo.save(d);
                 }
 
-                // avançar próxima geração
                 r.setProximaGeracao(calcularProximaData(r.getProximaGeracao(), r.getPeriodicidade()));
                 recorrenciaRepo.save(r);
             }

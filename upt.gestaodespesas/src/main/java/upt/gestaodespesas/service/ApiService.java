@@ -17,6 +17,8 @@ public class ApiService {
 
     private final HttpClient client;
     private final ObjectMapper mapper;
+
+    // Se precisares, mete isto num config/constante
     private static final String BASE_URL = "http://localhost:8080";
 
     private static String token; // partilhado entre instâncias
@@ -34,6 +36,14 @@ public class ApiService {
         token = jwtToken;
     }
 
+    public static void clearToken() {
+        token = null;
+    }
+
+    public static String getBaseUrl() {
+        return BASE_URL;
+    }
+
     private HttpRequest.Builder addAuthHeader(HttpRequest.Builder builder) {
         if (token != null && !token.isBlank()) {
             builder.header("Authorization", "Bearer " + token);
@@ -42,7 +52,6 @@ public class ApiService {
     }
 
     private IOException apiError(int statusCode, String body) {
-        // tenta ler o body no formato ApiErrorResponse devolvido pelo backend
         try {
             ApiErrorResponse err = mapper.readValue(body, ApiErrorResponse.class);
             String msg = (err.getMessage() != null && !err.getMessage().isBlank()) ? err.getMessage() : body;

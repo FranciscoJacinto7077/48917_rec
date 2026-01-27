@@ -2,6 +2,7 @@ package upt.gestaodespesas.dto;
 
 import upt.gestaodespesas.entity.Categoria;
 import upt.gestaodespesas.entity.Despesa;
+import upt.gestaodespesas.entity.DespesaRecorrente;
 import upt.gestaodespesas.entity.Utilizador;
 
 public final class DtoMapper {
@@ -26,6 +27,25 @@ public final class DtoMapper {
                 d.getValor(),
                 d.getMetodoPagamento(),
                 toCategoriaResponse(d.getCategoria())
+        );
+    }
+
+    public static RecorrenciaResponse toRecorrenciaResponse(DespesaRecorrente r) {
+        if (r == null) return null;
+
+        Long categoriaId = (r.getCategoria() != null) ? r.getCategoria().getId() : null;
+        String categoriaNome = (r.getCategoria() != null) ? r.getCategoria().getNome() : null;
+
+        return new RecorrenciaResponse(
+                r.getId(),
+                categoriaId,
+                categoriaNome,
+                r.getDescricao(),
+                r.getValor(),
+                r.getMetodoPagamento(),
+                r.getPeriodicidade(),
+                r.isAtiva(),
+                r.getProximaGeracao()
         );
     }
 }

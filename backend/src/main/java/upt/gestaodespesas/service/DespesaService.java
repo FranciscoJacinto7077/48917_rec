@@ -35,23 +35,18 @@ public class DespesaService {
             Double valorMin,
             Double valorMax
     ) {
-        // validações
-        if ((dataInicio == null) != (dataFim == null)) {
-            throw new BadRequestException("Indica dataInicio e dataFim (ou nenhuma).");
-        }
+        // validações datas (aceita só início, só fim, ou ambos)
         if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
             throw new BadRequestException("dataInicio não pode ser posterior a dataFim.");
         }
 
-        if ((valorMin == null) != (valorMax == null)) {
-            throw new BadRequestException("Indica valorMin e valorMax (ou nenhum).");
-        }
+        // validações valores (aceita só min, só max, ou ambos)
         if (valorMin != null && valorMax != null && valorMin > valorMax) {
             throw new BadRequestException("valorMin não pode ser maior que valorMax.");
         }
 
         // se pediram categoriaId, garante que pertence ao utilizador
-        if (categoriaId != null && !categoriaRepo.findByIdAndUtilizadorId(categoriaId, u.getId()).isPresent()) {
+        if (categoriaId != null && categoriaRepo.findByIdAndUtilizadorId(categoriaId, u.getId()).isEmpty()) {
             throw new BadRequestException("categoriaId inválida (não pertence ao utilizador autenticado).");
         }
 
@@ -61,15 +56,29 @@ public class DespesaService {
             var p = cb.conjunction();
             p.getExpressions().add(cb.equal(root.get("utilizador").get("id"), u.getId()));
 
+            // filtro por categoria
             if (categoriaId != null) {
                 p.getExpressions().add(cb.equal(root.get("categoria").get("id"), categoriaId));
             }
+
+            // filtro por datas
             if (dataInicio != null && dataFim != null) {
                 p.getExpressions().add(cb.between(root.get("data"), dataInicio, dataFim));
+            } else if (dataInicio != null) {
+                p.getExpressions().add(cb.greaterThanOrEqualTo(root.get("data"), dataInicio));
+            } else if (dataFim != null) {
+                p.getExpressions().add(cb.lessThanOrEqualTo(root.get("data"), dataFim));
             }
+
+            // filtro por valores
             if (valorMin != null && valorMax != null) {
                 p.getExpressions().add(cb.between(root.get("valor"), valorMin, valorMax));
+            } else if (valorMin != null) {
+                p.getExpressions().add(cb.greaterThanOrEqualTo(root.get("valor"), valorMin));
+            } else if (valorMax != null) {
+                p.getExpressions().add(cb.lessThanOrEqualTo(root.get("valor"), valorMax));
             }
+
             return p;
         };
 
@@ -82,6 +91,10 @@ public class DespesaService {
     }
 
     public Despesa criar(Utilizador u, DespesaRequest req) {
+        if (req.getData() != null && req.getData().isAfter(LocalDate.now())) {
+            throw new BadRequestException("A data não pode ser futura.");
+        }
+
         Categoria categoria = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), u.getId())
                 .orElseThrow(() -> new BadRequestException("categoriaId inválida (não pertence ao utilizador autenticado)."));
 
@@ -98,6 +111,10 @@ public class DespesaService {
     }
 
     public Despesa atualizar(Utilizador u, Long id, DespesaRequest req) {
+        if (req.getData() != null && req.getData().isAfter(LocalDate.now())) {
+            throw new BadRequestException("A data não pode ser futura.");
+        }
+
         Despesa existing = obterPorIdOrThrow(u, id);
 
         Categoria categoria = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), u.getId())

@@ -5,28 +5,35 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuItem?>
 
-<BorderPane xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:id="mainLayout" fx:controller="upt.gestaodespesas.controller.MainController" stylesheets="@../css/style.css">
+<BorderPane xmlns="http://javafx.com/javafx/8.0.171"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:id="mainLayout"
+            fx:controller="upt.gestaodespesas.controller.MainController"
+            stylesheets="@../css/style.css">
+
     <top>
         <MenuBar fx:id="appMenuBar" visible="false" managed="false">
             <menus>
-                <Menu text="App">
+                <Menu text="Conta">
                     <items>
-                        <MenuItem text="Login" onAction="#showLogin"/>
-                        <MenuItem text="Sair" onAction="#doLogout"/>
+                        <MenuItem text="Perfil" onAction="#showProfile"/>
+                        <MenuItem text="Logout" onAction="#doLogout"/>
                     </items>
                 </Menu>
+
                 <Menu text="Navegação">
-                     <items>
+                    <items>
                         <MenuItem text="Dashboard" onAction="#showDashboard"/>
                         <MenuItem text="Despesas" onAction="#showExpenses"/>
                         <MenuItem text="Categorias" onAction="#showCategories"/>
-                        <MenuItem text="Perfil" onAction="#showChangePassword"/>
-                     </items>
+                        <MenuItem text="Recorrências" onAction="#showRecorrencias"/>
+                    </items>
                 </Menu>
             </menus>
         </MenuBar>
     </top>
+
     <center>
-        <!-- Content will be placed here -->
+        <!-- Conteúdo carregado dinamicamente -->
     </center>
 </BorderPane>

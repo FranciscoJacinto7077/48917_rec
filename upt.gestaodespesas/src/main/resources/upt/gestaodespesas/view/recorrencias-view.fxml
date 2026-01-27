@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8.0.171"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="upt.gestaodespesas.controller.RecorrenciasController">
+
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <center>
+        <SplitPane dividerPositions="0.60">
+            <!-- Tabela -->
+            <VBox spacing="10">
+                <Label text="Recorrências" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+                <TableView fx:id="table">
+                    <columns>
+                        <TableColumn fx:id="idColumn" text="ID" prefWidth="60"/>
+                        <TableColumn fx:id="descColumn" text="Descrição" prefWidth="220"/>
+                        <TableColumn fx:id="valueColumn" text="Valor" prefWidth="90"/>
+                        <TableColumn fx:id="payColumn" text="Pagamento" prefWidth="120"/>
+                        <TableColumn fx:id="periodColumn" text="Periodicidade" prefWidth="120"/>
+                        <TableColumn fx:id="activeColumn" text="Ativa" prefWidth="70"/>
+                        <TableColumn fx:id="nextColumn" text="Próxima" prefWidth="110"/>
+                    </columns>
+                </TableView>
+
+                <HBox spacing="10">
+                    <Button text="Atualizar lista" onAction="#onClear"/>
+                </HBox>
+            </VBox>
+
+            <!-- Form -->
+            <VBox spacing="10">
+                <Label text="Detalhes" style="-fx-font-weight: bold;"/>
+
+                <VBox spacing="6">
+                    <Label text="Descrição"/>
+                    <TextField fx:id="descField"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Valor"/>
+                    <TextField fx:id="valueField"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Categoria"/>
+                    <ComboBox fx:id="categoryBox"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Método de Pagamento"/>
+                    <ComboBox fx:id="paymentBox"/>
+                </VBox>
+
+                <VBox spacing="6">
+                    <Label text="Periodicidade"/>
+                    <ComboBox fx:id="periodicityBox"/>
+                </VBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <CheckBox fx:id="activeBox" text="Ativa"/>
+                </HBox>
+
+                <VBox spacing="6">
+                    <Label text="Próxima geração"/>
+                    <DatePicker fx:id="nextDatePicker"/>
+                </VBox>
+
+                <HBox spacing="10">
+                    <Button text="Criar" onAction="#onAdd"/>
+                    <Button text="Atualizar" onAction="#onUpdate"/>
+                    <Button text="Apagar" onAction="#onDelete"/>
+                    <Button text="Limpar" onAction="#onClear"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
+    </center>
+
+</BorderPane>

@@ -2,6 +2,7 @@ package upt.gestaodespesas.dto;
 
 import java.time.LocalDate;
 
+import javax.validation.constraints.PastOrPresent;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
@@ -11,6 +12,7 @@ import upt.gestaodespesas.entity.MetodoPagamento;
 public class DespesaRequest {
 
     @NotNull(message = "A data é obrigatória")
+    @PastOrPresent(message = "A data não pode ser futura")
     private LocalDate data;
 
     @NotBlank(message = "A descrição é obrigatória")
