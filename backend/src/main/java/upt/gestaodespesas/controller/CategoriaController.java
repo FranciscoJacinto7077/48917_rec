@@ -7,7 +7,11 @@ import javax.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import upt.gestaodespesas.entity.Categoria;
+import java.util.stream.Collectors;
+
+import upt.gestaodespesas.dto.CategoriaRequest;
+import upt.gestaodespesas.dto.CategoriaResponse;
+import upt.gestaodespesas.dto.DtoMapper;
 import upt.gestaodespesas.entity.Utilizador;
 import upt.gestaodespesas.service.CategoriaService;
 import upt.gestaodespesas.service.UtilizadorService;
@@ -25,24 +29,25 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public List<Categoria> listarCategorias() {
+    public List<CategoriaResponse> listarCategorias() {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        return categoriaService.listarCategorias(u);
+        return categoriaService.listarCategorias(u).stream()
+                .map(DtoMapper::toCategoriaResponse)
+                .collect(Collectors.toList());
     }
 
     @PostMapping
-    public ResponseEntity<Categoria> criarCategoria(@Valid @RequestBody Categoria c) {
+    public ResponseEntity<CategoriaResponse> criarCategoria(@Valid @RequestBody CategoriaRequest c) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        Categoria guardada = categoriaService.criarCategoria(u, c);
-        return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(DtoMapper.toCategoriaResponse(categoriaService.criarCategoria(u, c)));
     }
 
-    // RF5: editar
+    // RF5
     @PutMapping("/{id}")
-    public ResponseEntity<Categoria> atualizar(@PathVariable Long id, @Valid @RequestBody Categoria dados) {
+    public ResponseEntity<CategoriaResponse> atualizar(@PathVariable Long id, @Valid @RequestBody CategoriaRequest dados) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        Categoria atualizada = categoriaService.atualizarCategoria(u, id, dados);
-        return ResponseEntity.ok(atualizada);
+        return ResponseEntity.ok(DtoMapper.toCategoriaResponse(categoriaService.atualizarCategoria(u, id, dados)));
     }
 
     @DeleteMapping("/{id}")

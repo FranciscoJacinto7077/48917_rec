@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import upt.gestaodespesas.dto.UpdatePasswordRequest;
 import upt.gestaodespesas.dto.UpdateProfileRequest;
-import upt.gestaodespesas.entity.Utilizador;
+import upt.gestaodespesas.dto.UserMeResponse;
+import upt.gestaodespesas.dto.DtoMapper;
 import upt.gestaodespesas.service.UtilizadorService;
 
 @RestController
@@ -21,13 +22,13 @@ public class UtilizadorController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Utilizador> me() {
-        return ResponseEntity.ok(utilizadorService.getAuthenticatedUser());
+    public ResponseEntity<UserMeResponse> me() {
+        return ResponseEntity.ok(DtoMapper.toUserMe(utilizadorService.getAuthenticatedUser()));
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<Utilizador> updateProfile(@Valid @RequestBody UpdateProfileRequest req) {
-        return ResponseEntity.ok(utilizadorService.updateProfile(req));
+    public ResponseEntity<UserMeResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest req) {
+        return ResponseEntity.ok(DtoMapper.toUserMe(utilizadorService.updateProfile(req)));
     }
 
     @PutMapping("/password")

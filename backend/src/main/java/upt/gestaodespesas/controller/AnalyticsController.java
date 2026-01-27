@@ -34,7 +34,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.totalMensal(userId, ano, mes));
     }
 
-    // US15 (por período opcional)
+    // US15
     @GetMapping("/total-por-categoria")
     public ResponseEntity<List<TotalPorCategoriaItem>> totalPorCategoria(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,

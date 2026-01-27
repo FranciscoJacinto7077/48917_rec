@@ -2,9 +2,7 @@ package upt.gestaodespesas.model;
 
 public enum MetodoPagamento {
     DINHEIRO,
-    CARTAO_CREDITO,
-    CARTAO_DEBITO,
+    CARTAO,
     MBWAY,
-    TRANSFERENCIA,
-    OUTRO
+    TRANSFERENCIA_BANCARIA
 }

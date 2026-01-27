@@ -14,6 +14,7 @@ import upt.gestaodespesas.dto.analytics.TotalMensalResponse;
 import upt.gestaodespesas.dto.analytics.TotalPorCategoriaItem;
 import upt.gestaodespesas.entity.Despesa;
 import upt.gestaodespesas.repository.DespesaRepository;
+import upt.gestaodespesas.exception.BadRequestException;
 
 @Service
 public class AnalyticsService {
@@ -26,8 +27,8 @@ public class AnalyticsService {
 
     // US14 / RF14
     public TotalMensalResponse totalMensal(Long userId, int ano, int mes) {
-        if (ano < 1900 || ano > 3000) throw new IllegalArgumentException("Ano inválido.");
-        if (mes < 1 || mes > 12) throw new IllegalArgumentException("Mês inválido.");
+        if (ano < 1900 || ano > 3000) throw new BadRequestException("Ano inválido.");
+        if (mes < 1 || mes > 12) throw new BadRequestException("Mês inválido.");
 
         YearMonth ym = YearMonth.of(ano, mes);
         LocalDate inicio = ym.atDay(1);
@@ -42,10 +43,10 @@ public class AnalyticsService {
     // US15 / RF15 (período opcional)
     public List<TotalPorCategoriaItem> totalPorCategoria(Long userId, LocalDate dataInicio, LocalDate dataFim) {
         if ((dataInicio == null) != (dataFim == null)) {
-            throw new IllegalArgumentException("Indica dataInicio e dataFim (ou nenhuma).");
+            throw new BadRequestException("Indica dataInicio e dataFim (ou nenhuma).");
         }
         if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
-            throw new IllegalArgumentException("dataInicio não pode ser posterior a dataFim.");
+            throw new BadRequestException("dataInicio não pode ser posterior a dataFim.");
         }
 
         List<Despesa> despesas;
@@ -76,10 +77,10 @@ public class AnalyticsService {
     // US16 / RF16
     public DashboardResponse dashboard(Long userId, LocalDate dataInicio, LocalDate dataFim) {
         if (dataInicio == null || dataFim == null) {
-            throw new IllegalArgumentException("dataInicio e dataFim são obrigatórias.");
+            throw new BadRequestException("dataInicio e dataFim são obrigatórias.");
         }
         if (dataInicio.isAfter(dataFim)) {
-            throw new IllegalArgumentException("dataInicio não pode ser posterior a dataFim.");
+            throw new BadRequestException("dataInicio não pode ser posterior a dataFim.");
         }
 
         List<Despesa> despesas = listarPeriodo(userId, dataInicio, dataFim);

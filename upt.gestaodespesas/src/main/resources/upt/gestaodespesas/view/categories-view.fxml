@@ -19,6 +19,7 @@
     <HBox spacing="10" alignment="CENTER_LEFT">
         <TextField fx:id="nameField" promptText="Nome da Categoria"/>
         <Button text="Adicionar" onAction="#onAdd"/>
+        <Button text="Editar Selecionada" onAction="#onEdit"/>
         <Button text="Remover Selecionada" onAction="#onDelete"/>
     </HBox>
 

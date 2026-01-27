@@ -6,48 +6,59 @@ import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import upt.gestaodespesas.dto.DespesaRequest;
+import upt.gestaodespesas.entity.Categoria;
 import upt.gestaodespesas.entity.Despesa;
 import upt.gestaodespesas.entity.Utilizador;
+import upt.gestaodespesas.exception.BadRequestException;
+import upt.gestaodespesas.exception.NotFoundException;
+import upt.gestaodespesas.repository.CategoriaRepository;
 import upt.gestaodespesas.repository.DespesaRepository;
 
 @Service
 public class DespesaService {
 
     private final DespesaRepository despesaRepo;
+    private final CategoriaRepository categoriaRepo;
 
-    public DespesaService(DespesaRepository despesaRepo) {
+    public DespesaService(DespesaRepository despesaRepo, CategoriaRepository categoriaRepo) {
         this.despesaRepo = despesaRepo;
+        this.categoriaRepo = categoriaRepo;
     }
 
-    // RF10 + RF11/12/13: listagem do utilizador com filtros
-    public List<Despesa> listar(Utilizador u,
-                                Long categoriaId,
-                                LocalDate dataInicio,
-                                LocalDate dataFim,
-                                Double valorMin,
-                                Double valorMax) {
-
-        // validações básicas
+    // RF10 + RF11/12/13
+    public List<Despesa> listar(
+            Utilizador u,
+            Long categoriaId,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Double valorMin,
+            Double valorMax
+    ) {
+        // validações
         if ((dataInicio == null) != (dataFim == null)) {
-            throw new RuntimeException("Indica dataInicio e dataFim (ou nenhuma).");
+            throw new BadRequestException("Indica dataInicio e dataFim (ou nenhuma).");
         }
         if (dataInicio != null && dataFim != null && dataInicio.isAfter(dataFim)) {
-            throw new RuntimeException("dataInicio não pode ser posterior a dataFim.");
+            throw new BadRequestException("dataInicio não pode ser posterior a dataFim.");
         }
+
         if ((valorMin == null) != (valorMax == null)) {
-            throw new RuntimeException("Indica valorMin e valorMax (ou nenhum).");
+            throw new BadRequestException("Indica valorMin e valorMax (ou nenhum).");
         }
         if (valorMin != null && valorMax != null && valorMin > valorMax) {
-            throw new RuntimeException("valorMin não pode ser maior que valorMax.");
+            throw new BadRequestException("valorMin não pode ser maior que valorMax.");
+        }
+
+        // se pediram categoriaId, garante que pertence ao utilizador
+        if (categoriaId != null && !categoriaRepo.findByIdAndUtilizadorId(categoriaId, u.getId()).isPresent()) {
+            throw new BadRequestException("categoriaId inválida (não pertence ao utilizador autenticado).");
         }
 
         Specification<Despesa> spec = (root, query, cb) -> {
-            // ordenação por data desc
             query.orderBy(cb.desc(root.get("data")));
 
             var p = cb.conjunction();
-
-            // sempre por utilizador
             p.getExpressions().add(cb.equal(root.get("utilizador").get("id"), u.getId()));
 
             if (categoriaId != null) {
@@ -65,31 +76,44 @@ public class DespesaService {
         return despesaRepo.findAll(spec);
     }
 
-    public Despesa obterPorId(Utilizador u, Long id) {
-        return despesaRepo.findByIdAndUtilizadorId(id, u.getId()).orElse(null);
+    public Despesa obterPorIdOrThrow(Utilizador u, Long id) {
+        return despesaRepo.findByIdAndUtilizadorId(id, u.getId())
+                .orElseThrow(() -> new NotFoundException("Despesa não encontrada."));
     }
 
-    public Despesa criar(Utilizador u, Despesa despesa) {
+    public Despesa criar(Utilizador u, DespesaRequest req) {
+        Categoria categoria = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), u.getId())
+                .orElseThrow(() -> new BadRequestException("categoriaId inválida (não pertence ao utilizador autenticado)."));
+
+        Despesa despesa = new Despesa();
         despesa.setId(null);
         despesa.setUtilizador(u);
+        despesa.setCategoria(categoria);
+        despesa.setData(req.getData());
+        despesa.setDescricao(req.getDescricao() == null ? null : req.getDescricao().trim());
+        despesa.setValor(req.getValor());
+        despesa.setMetodoPagamento(req.getMetodoPagamento());
+
         return despesaRepo.save(despesa);
     }
 
-    public Despesa atualizar(Utilizador u, Long id, Despesa dados) {
-        return despesaRepo.findByIdAndUtilizadorId(id, u.getId()).map(existing -> {
-            existing.setDescricao(dados.getDescricao());
-            existing.setValor(dados.getValor());
-            existing.setData(dados.getData());
-            existing.setCategoria(dados.getCategoria());
-            existing.setMetodoPagamento(dados.getMetodoPagamento());
-            return despesaRepo.save(existing);
-        }).orElse(null);
+    public Despesa atualizar(Utilizador u, Long id, DespesaRequest req) {
+        Despesa existing = obterPorIdOrThrow(u, id);
+
+        Categoria categoria = categoriaRepo.findByIdAndUtilizadorId(req.getCategoriaId(), u.getId())
+                .orElseThrow(() -> new BadRequestException("categoriaId inválida (não pertence ao utilizador autenticado)."));
+
+        existing.setDescricao(req.getDescricao() == null ? null : req.getDescricao().trim());
+        existing.setValor(req.getValor());
+        existing.setData(req.getData());
+        existing.setCategoria(categoria);
+        existing.setMetodoPagamento(req.getMetodoPagamento());
+
+        return despesaRepo.save(existing);
     }
 
-    public boolean apagar(Utilizador u, Long id) {
-        return despesaRepo.findByIdAndUtilizadorId(id, u.getId()).map(d -> {
-            despesaRepo.delete(d);
-            return true;
-        }).orElse(false);
+    public void apagar(Utilizador u, Long id) {
+        Despesa d = obterPorIdOrThrow(u, id);
+        despesaRepo.delete(d);
     }
 }

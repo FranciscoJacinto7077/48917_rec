@@ -9,7 +9,11 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import upt.gestaodespesas.entity.Despesa;
+import java.util.stream.Collectors;
+
+import upt.gestaodespesas.dto.DespesaRequest;
+import upt.gestaodespesas.dto.DespesaResponse;
+import upt.gestaodespesas.dto.DtoMapper;
 import upt.gestaodespesas.entity.Utilizador;
 import upt.gestaodespesas.service.DespesaService;
 import upt.gestaodespesas.service.UtilizadorService;
@@ -27,7 +31,7 @@ public class DespesaController {
     }
 
     @GetMapping
-    public List<Despesa> listar(
+    public List<DespesaResponse> listar(
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
@@ -35,37 +39,35 @@ public class DespesaController {
             @RequestParam(required = false) Double valorMax
     ) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        return despesaService.listar(u, categoriaId, dataInicio, dataFim, valorMin, valorMax);
+        return despesaService.listar(u, categoriaId, dataInicio, dataFim, valorMin, valorMax)
+                .stream().map(DtoMapper::toDespesaResponse).collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Despesa> obterPorId(@PathVariable Long id) {
+    public ResponseEntity<DespesaResponse> obterPorId(@PathVariable Long id) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        Despesa d = despesaService.obterPorId(u, id);
-        if (d == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(d);
+        var d = despesaService.obterPorIdOrThrow(u, id);
+        return ResponseEntity.ok(DtoMapper.toDespesaResponse(d));
     }
 
     @PostMapping
-    public ResponseEntity<Despesa> criar(@Valid @RequestBody Despesa despesa) {
+    public ResponseEntity<DespesaResponse> criar(@Valid @RequestBody DespesaRequest despesa) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        Despesa guardada = despesaService.criar(u, despesa);
-        return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
+        var guardada = despesaService.criar(u, despesa);
+        return ResponseEntity.status(HttpStatus.CREATED).body(DtoMapper.toDespesaResponse(guardada));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Despesa> atualizar(@PathVariable Long id, @Valid @RequestBody Despesa dados) {
+    public ResponseEntity<DespesaResponse> atualizar(@PathVariable Long id, @Valid @RequestBody DespesaRequest dados) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        Despesa d = despesaService.atualizar(u, id, dados);
-        if (d == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(d);
+        var d = despesaService.atualizar(u, id, dados);
+        return ResponseEntity.ok(DtoMapper.toDespesaResponse(d));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> apagar(@PathVariable Long id) {
         Utilizador u = utilizadorService.getAuthenticatedUser();
-        boolean ok = despesaService.apagar(u, id);
-        if (!ok) return ResponseEntity.notFound().build();
+        despesaService.apagar(u, id);
         return ResponseEntity.noContent().build();
     }
 }
