@@ -1,21 +1,33 @@
 package upt.gestaodespesas.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDate;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Recorrencia {
+
     private Long id;
+    private Long categoriaId;
+    private String categoriaNome;
+
     private String descricao;
     private Double valor;
     private MetodoPagamento metodoPagamento;
     private Periodicidade periodicidade;
     private boolean ativa;
     private LocalDate proximaGeracao;
-    private Categoria categoria;
 
     public Recorrencia() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Long getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }
+
+    public String getCategoriaNome() { return categoriaNome; }
+    public void setCategoriaNome(String categoriaNome) { this.categoriaNome = categoriaNome; }
 
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
@@ -34,7 +46,4 @@ public class Recorrencia {
 
     public LocalDate getProximaGeracao() { return proximaGeracao; }
     public void setProximaGeracao(LocalDate proximaGeracao) { this.proximaGeracao = proximaGeracao; }
-
-    public Categoria getCategoria() { return categoria; }
-    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
 }

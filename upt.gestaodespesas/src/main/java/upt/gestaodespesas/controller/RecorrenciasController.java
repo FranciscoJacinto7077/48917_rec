@@ -18,6 +18,7 @@ public class RecorrenciasController {
     @FXML private TableColumn<Recorrencia, Long> idColumn;
     @FXML private TableColumn<Recorrencia, String> descColumn;
     @FXML private TableColumn<Recorrencia, Double> valueColumn;
+    @FXML private TableColumn<Recorrencia, String> categoryColumn; 
     @FXML private TableColumn<Recorrencia, MetodoPagamento> payColumn;
     @FXML private TableColumn<Recorrencia, Periodicidade> periodColumn;
     @FXML private TableColumn<Recorrencia, Boolean> activeColumn;
@@ -43,6 +44,7 @@ public class RecorrenciasController {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         descColumn.setCellValueFactory(new PropertyValueFactory<>("descricao"));
         valueColumn.setCellValueFactory(new PropertyValueFactory<>("valor"));
+        categoryColumn.setCellValueFactory(new PropertyValueFactory<>("categoriaNome")); 
         payColumn.setCellValueFactory(new PropertyValueFactory<>("metodoPagamento"));
         periodColumn.setCellValueFactory(new PropertyValueFactory<>("periodicidade"));
         activeColumn.setCellValueFactory(new PropertyValueFactory<>("ativa"));
@@ -62,11 +64,31 @@ public class RecorrenciasController {
         });
     }
 
+    @FXML
+    public void onRefresh() {
+        loadRecorrencias();
+    }
+
     private void loadCategories() {
         try {
             List<Categoria> list = api.getList("/api/categorias", new TypeReference<List<Categoria>>(){});
             categories.setAll(list);
             categoryBox.setItems(categories);
+
+            // UX: mostrar o nome na combo (se Categoria.toString não estiver ok)
+            categoryBox.setCellFactory(cb -> new ListCell<>() {
+                @Override protected void updateItem(Categoria item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.getNome());
+                }
+            });
+            categoryBox.setButtonCell(new ListCell<>() {
+                @Override protected void updateItem(Categoria item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.getNome());
+                }
+            });
+
         } catch (Exception e) {
             e.printStackTrace();
             alert(Alert.AlertType.ERROR, "Erro", normalize(e, "Falha ao carregar categorias."));
@@ -156,7 +178,7 @@ public class RecorrenciasController {
         RecorrenciaRequest req = new RecorrenciaRequest();
         req.setDescricao(desc);
         req.setValor(v);
-        req.setCategoriaId(categoryBox.getValue().getId());
+        req.setCategoriaId(categoryBox.getValue().getId()); 
         req.setMetodoPagamento(paymentBox.getValue());
         req.setPeriodicidade(periodicityBox.getValue());
         req.setAtiva(activeBox.isSelected());
@@ -172,9 +194,14 @@ public class RecorrenciasController {
         activeBox.setSelected(r.isAtiva());
         nextDatePicker.setValue(r.getProximaGeracao());
 
-        // categoria pode vir null se backend ainda expõe entity "diferente"
-        if (r.getCategoria() != null) {
-            categoryBox.setValue(r.getCategoria());
+        if (r.getCategoriaId() != null) {
+            Categoria match = categories.stream()
+                    .filter(c -> r.getCategoriaId().equals(c.getId()))
+                    .findFirst()
+                    .orElse(null);
+            categoryBox.setValue(match);
+        } else {
+            categoryBox.setValue(null);
         }
     }
 

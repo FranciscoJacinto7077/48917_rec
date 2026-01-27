@@ -36,6 +36,7 @@ public class MainController {
     public void showCategories() { loadView("categories-view.fxml"); }
     public void showProfile() { loadView("profile-view.fxml"); }
     public void showRecorrencias() { loadView("recorrencias-view.fxml"); }
+    public void showTotais() { loadView("totais-view.fxml"); }
 
     public void doLogout() {
         ApiService.clearToken();
@@ -58,6 +59,7 @@ public class MainController {
             if (controller instanceof DashboardController c) c.setMainController(this);
             if (controller instanceof ProfileController c) c.setMainController(this);
             if (controller instanceof RecorrenciasController c) c.setMainController(this);
+            if (controller instanceof TotaisController c) c.setMainController(this);
 
             mainLayout.setCenter(view);
         } catch (IOException e) {

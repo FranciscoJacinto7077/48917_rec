@@ -1,6 +1,7 @@
 package upt.gestaodespesas.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import upt.gestaodespesas.model.ApiErrorResponse;
@@ -18,31 +19,24 @@ public class ApiService {
     private final HttpClient client;
     private final ObjectMapper mapper;
 
-    // Se precisares, mete isto num config/constante
     private static final String BASE_URL = "http://localhost:8080";
-
-    private static String token; // partilhado entre instâncias
+    private static String token;
 
     public ApiService() {
         this.client = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule());
+
+        this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public static void setToken(String jwtToken) {
-        token = jwtToken;
-    }
-
-    public static void clearToken() {
-        token = null;
-    }
-
-    public static String getBaseUrl() {
-        return BASE_URL;
-    }
+    public static void setToken(String jwtToken) { token = jwtToken; }
+    public static void clearToken() { token = null; }
+    public static String getBaseUrl() { return BASE_URL; }
 
     private HttpRequest.Builder addAuthHeader(HttpRequest.Builder builder) {
         if (token != null && !token.isBlank()) {

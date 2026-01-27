@@ -27,6 +27,8 @@
                         <MenuItem text="Despesas" onAction="#showExpenses"/>
                         <MenuItem text="Categorias" onAction="#showCategories"/>
                         <MenuItem text="Recorrências" onAction="#showRecorrencias"/>
+                        <MenuItem text="Totais" onAction="#showTotais"/>
+
                     </items>
                 </Menu>
             </menus>

@@ -23,6 +23,8 @@
                         <TableColumn fx:id="idColumn" text="ID" prefWidth="60"/>
                         <TableColumn fx:id="descColumn" text="Descrição" prefWidth="220"/>
                         <TableColumn fx:id="valueColumn" text="Valor" prefWidth="90"/>
+                        <TableColumn fx:id="categoryColumn" text="Categoria" prefWidth="160"/>
+
                         <TableColumn fx:id="payColumn" text="Pagamento" prefWidth="120"/>
                         <TableColumn fx:id="periodColumn" text="Periodicidade" prefWidth="120"/>
                         <TableColumn fx:id="activeColumn" text="Ativa" prefWidth="70"/>
@@ -31,7 +33,7 @@
                 </TableView>
 
                 <HBox spacing="10">
-                    <Button text="Atualizar lista" onAction="#onClear"/>
+                    <Button text="Atualizar lista" onAction="#onRefresh"/>
                 </HBox>
             </VBox>
 
